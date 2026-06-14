@@ -16,14 +16,7 @@ El módulo se conecta con la API de Telegram para automatizar el envío de aviso
 
 ## Instalación
 
-Clona este repositorio en tu equipo:
-
-```bash
-git clone https://github.com/KarenCaceres23/Smart_Alerts.git
-cd Smart_Alerts
-```
-
-Instala las dependencias necesarias:
+Para preparar el entorno de ejecución, asegúrate de estar dentro de la carpeta del proyecto e instala las dependencias necesarias:
 
 ```bash
 pip install -r requirements.txt
