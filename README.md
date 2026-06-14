@@ -1,120 +1,76 @@
 # SmartH2O Telegram Bot
 
-Este repositorio contiene el módulo de notificaciones por Telegram para el proyecto académico **SmartH2O**. Su función principal es enviar alertas de texto formateadas a un grupo o usuario de Telegram cuando el sistema detecta un evento relevante.
+En este repositorio presento el módulo de notificaciones por Telegram que desarrollé para el proyecto académico **SmartH2O**. Su función principal es enviar alertas automatizadas a un grupo o usuario cuando el sistema detecta un evento importante.
 
-## Descripción general
+## Descripción del Desarrollo
 
-El módulo se conecta con la API de Telegram para automatizar el envío de avisos del sistema. Entre sus principales características se incluyen:
+Para este módulo, realicé la integración directa con la API de Telegram. Entre las principales características y mecanismos que implementé, destacan:
 
-* Envío de mensajes en formato HTML.
-* Alertas con nivel de severidad y hora de envío.
-* Uso de variables de entorno para proteger credenciales sensibles.
-* Archivo `.env.example` como plantilla de configuración.
-* Protección anti-spam mediante cooldown para evitar alertas repetidas.
-* Script auxiliar para obtener el `TELEGRAM_CHAT_ID`.
-* Script de prueba para validar el funcionamiento del bot.
+* **Formato HTML:** Las alertas se envían con una estructura clara que incluye nivel de severidad y hora exacta.
+* **Seguridad de credenciales:** Configuré el uso de variables de entorno (`.env`) para no exponer los tokens en el código fuente.
+* **Protección Anti-Spam (Cooldown):** Desarrollé una lógica en memoria que evita que el sistema envíe alertas repetidas si un sensor falla, protegiendo así el chat.
+* **Scripts de soporte:** Creé un script auxiliar (`get_chat_id.py`) para facilitar la obtención del ID del grupo, y un script de validación (`test_bot.py`) para comprobar que todo funcione.
 
-## Instalación
+## Preparación del Entorno
 
-Para preparar el entorno de ejecución, asegúrate de estar dentro de la carpeta del proyecto e instala las dependencias necesarias:
+Para poner en marcha el proyecto, es necesario instalar las dependencias que configuré. Asegúrate de estar dentro de la carpeta y ejecuta:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-En Linux, si estás usando entorno virtual:
+*(En Linux, si usas un entorno virtual, actívalo antes con `source .venv/bin/activate`).*
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+## Configuración de Credenciales
 
-## Configuración del entorno
-
-Para que el bot funcione, es necesario crear un archivo `.env` basado en el archivo `.env.example`.
+Para que el bot tenga acceso, dejé un archivo de plantilla llamado `.env.example`. Solo tienes que copiarlo y crear tu propio archivo `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Dentro del archivo `.env` se deben configurar las siguientes variables:
+Dentro de tu nuevo archivo `.env`, debes llenar estos tres datos:
 
 ```env
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+TELEGRAM_BOT_TOKEN=tu_token_aqui
+TELEGRAM_CHAT_ID=tu_chat_id_aqui
 ALERT_COOLDOWN_SECONDS=60
 ```
 
-### Variables utilizadas
+* `TELEGRAM_BOT_TOKEN`: El token que te entrega BotFather al registrar el bot.
+* `TELEGRAM_CHAT_ID`: El número identificador del chat donde llegarán las alertas.
+* `ALERT_COOLDOWN_SECONDS`: El tiempo en segundos que el sistema debe esperar antes de dejar pasar una alerta repetida.
 
-* `TELEGRAM_BOT_TOKEN`: token generado por BotFather al crear el bot de Telegram.
-* `TELEGRAM_CHAT_ID`: identificador numérico del chat o grupo donde se enviarán las alertas.
-* `ALERT_COOLDOWN_SECONDS`: tiempo de espera, en segundos, antes de permitir nuevamente una alerta repetida.
+### Notas de Seguridad Implementadas
 
-## Seguridad
+Como medida de seguridad para el repositorio, apliqué las siguientes reglas:
+* El archivo `.env` está configurado para ser ignorado por Git, por lo que nunca se subirá a GitHub.
+* Ningún token o contraseña se coloca directamente dentro de los scripts `.py`.
+* Si alguna vez el token llega a filtrarse accidentalmente, recuerda revocarlo de inmediato usando `/revoke` en BotFather.
 
-El archivo `.env` contiene credenciales sensibles y no debe subirse a GitHub.
+## ¿Cómo obtener tu Chat ID?
 
-Reglas importantes:
-
-* No compartir el token del bot públicamente.
-* No colocar credenciales directamente en el código fuente.
-* No subir el archivo `.env` al repositorio.
-* Si el token se expone por error, se debe revocar desde BotFather usando el comando `/revoke`.
-
-## Obtener el TELEGRAM_CHAT_ID
-
-Si no conoces el `TELEGRAM_CHAT_ID`, primero debes enviar un mensaje al bot o al grupo donde está agregado.
-
-Luego ejecuta:
+Si no conoces tu `TELEGRAM_CHAT_ID`, asegúrate de enviarle un mensaje de prueba al bot desde tu Telegram y luego ejecuta el script que preparé:
 
 ```bash
 python src/get_chat_id.py
 ```
+*(Si lo agregaste a un grupo, es normal que el ID empiece con un signo negativo `-100...`).*
 
-El script mostrará el ID del chat en la terminal. En grupos o supergrupos, el ID puede iniciar con `-100`.
+## Ejecución de Pruebas
 
-## Prueba del bot
-
-Cuando el archivo `.env` ya esté configurado, ejecuta:
+Una vez configurado tu `.env`, puedes validar toda la integración ejecutando:
 
 ```bash
 python src/test_bot.py
 ```
 
-El script enviará una alerta de prueba a Telegram y luego intentará enviar una segunda alerta idéntica para validar el sistema anti-spam.
+Al correrlo, notarás que la primera alerta llega correctamente a tu Telegram, pero el segundo intento es bloqueado intencionalmente por la consola para demostrar que el sistema anti-spam (cooldown) que diseñé está funcionando correctamente.
 
-La primera alerta debe enviarse correctamente.
-La segunda alerta debe ser omitida por cooldown.
+## Solución de Problemas Comunes
 
-## Problemas comunes
+Si al probarlo te encuentras con algún error, revisa estos puntos:
 
-### Error 401 Unauthorized
-
-El token del bot está mal escrito, fue revocado o no corresponde al bot configurado. Revisa el archivo `.env`.
-
-### Chat not found
-
-El bot no encuentra el chat configurado. Verifica que el `TELEGRAM_CHAT_ID` sea correcto y que el bot esté agregado al grupo.
-
-### getUpdates devuelve vacío
-
-Telegram no tiene mensajes recientes registrados para el bot. Envía un mensaje al bot o al grupo y vuelve a ejecutar:
-
-```bash
-python src/get_chat_id.py
-```
-
-## Evidencia de funcionamiento
-
-Durante las pruebas se verificó que:
-
-* El bot envía mensajes correctamente al grupo configurado.
-* Las credenciales se leen desde el archivo `.env`.
-* El archivo `.env` permanece ignorado por Git.
-* El sistema anti-spam evita el envío repetido de una misma alerta dentro del tiempo de cooldown configurado.
-
-## Estado del módulo
-
-El módulo de notificaciones por Telegram queda preparado como base para futuras integraciones con reglas de detección, sensores, dashboards o servicios de alertamiento del proyecto SmartH2O.
+* **Error 401 Unauthorized:** Probablemente hay un error de tipeo en el token o fue revocado. Revisa tu `.env`.
+* **Chat not found:** El bot no encuentra tu chat. Asegúrate de haberle mandado un mensaje primero en Telegram para registrar la conversación.
+* **getUpdates devuelve vacío:** La API de Telegram a veces limpia el historial rápido. Solo mándale otro mensaje al bot y vuelve a correr `get_chat_id.py`.
