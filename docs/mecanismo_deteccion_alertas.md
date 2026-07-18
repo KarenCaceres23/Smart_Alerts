@@ -1,104 +1,106 @@
 # Mecanismo de Detección de Anomalías y Alertas
 
-## 1. Objetivo del documento
+## 1. Alcance de la Fase 2
 
-Este documento describe cómo el sistema SmartH2O detectará anomalías en el consumo de agua utilizando datos almacenados en InfluxDB y cómo se generarán alertas mediante un bot de Telegram o correo electrónico.
+Este documento define el mecanismo de detección conceptual y la estructura de alertas de la Fase 2. Aún **no** incluye la integración con InfluxDB, las consultas Flux, Grafana Alerting ni la ejecución programada automática (estas pertenecen a la Fase 3).
 
-El propósito es dejar claro el flujo de integración entre los datos de sensores, la base de datos, las reglas de detección y los canales de notificación.
-
-## 2. Flujo general del sistema
-
-Sensor / Simulador IoT → MQTT/REST → Servicio de Ingestión → InfluxDB → Detector de reglas → Bot de Telegram / Email
-
-Descripción del flujo:
+## 2. Flujo conceptual de detección
 
 1. El sensor o simulador IoT genera lecturas de consumo de agua.
-2. Cada lectura contiene datos como `sensor_id`, `timestamp`, `flow_rate`, `cumulative_volume`, `status`, `anomaly_flag` y `location`.
-3. Los datos son enviados mediante MQTT o REST hacia el servicio de ingestión.
-4. El servicio de ingestión valida y almacena los datos en InfluxDB.
-5. El detector consulta InfluxDB en ventanas de tiempo recientes.
-6. Las lecturas se comparan con las reglas de detección.
-7. Si se cumple una condición anómala, se genera una alerta.
-8. La alerta se envía por Telegram o email.
+2. Los datos son enviados mediante MQTT o REST hacia el servicio de ingestión.
+3. El servicio valida y almacena los datos en InfluxDB.
+4. El detector (futura Fase 3) consulta InfluxDB evaluando ventanas de tiempo.
+5. Se comparan las lecturas con los umbrales de las reglas.
+6. Si se cumple una condición, se instancia una `Alert`.
+7. El sistema verifica el *debounce* (cooldown). Si no está suprimida, envía la alerta a Telegram.
 
-## 3. Datos utilizados para la detección
+## 3. Estructura de una Alerta
 
-| Campo | Descripción | Ejemplo |
-|---|---|---|
-| `sensor_id` | Identificador único del sensor | SH2O-ZA-001 |
-| `timestamp` | Fecha y hora de la lectura | 2026-06-18T10:30:00Z |
-| `flow_rate` | Caudal instantáneo en litros por minuto | 22.5 |
-| `cumulative_volume` | Volumen acumulado del día en litros | 850.0 |
-| `status` | Estado del sensor o lectura | normal, warning, critical, offline |
-| `anomaly_flag` | Indica si la lectura es anómala | true o false |
-| `location` | Ubicación del punto de medición | Edificio, piso, zona |
+Toda anomalía detectada se encapsula en una estructura inmutable (`dataclass Alert`) que contiene:
+- `rule_id`: (R01, R02, etc.)
+- `sensor_id`: Identificador único del sensor.
+- `zone`: Ubicación (ej. Cocina, Sanitarios).
+- `value`: Lectura actual.
+- `threshold`: Valor de referencia superado.
+- `severity`: Severidad del evento.
+- `description`: Contexto del evento.
+- `recommended_action`: Acción sugerida.
 
-## 4. Reglas de detección propuestas
+### Severidades
+Solo existen tres niveles de severidad (`Enum Severity`):
+- `INFO` (ℹ️): Informativo o eventos de conectividad.
+- `WARNING` (⚠️): Advertencias, consumo irregular o fuera de horario.
+- `CRITICAL` (🚨): Fallas críticas, flujos excesivos o posibles fugas mayores.
 
-| Regla | Condición | Severidad | Canal de notificación | Descripción |
-|---|---|---|---|---|
-| R01 | `flow_rate` > 20 L/min durante más de 10 minutos | critical | Telegram | Posible fuga o consumo excesivo sostenido. |
-| R02 | `flow_rate` > 5 L/min en horario nocturno | warning | Telegram | Consumo fuera del horario esperado. |
-| R03 | Sensor sin datos por más de 10 minutos | warning | Telegram/email | Posible desconexión o falla del sensor. |
-| R04 | `cumulative_volume` supera el consumo esperado diario | critical | Telegram/email | Consumo acumulado anormal para la zona. |
+## 4. Reglas de detección detalladas
 
-## 5. Consulta de datos desde InfluxDB
+### R01: Caudal crítico por sensor/zona
+- **Objetivo:** Detectar fugas mayores o consumo excesivo continuo.
+- **Condición:** `flow_rate` > umbral crítico configurado (ej. 20 L/min).
+- **Persistencia:** Durante más de 10 minutos seguidos.
+- **Severidad:** `CRITICAL`
+- **Acción recomendada:** Revisar tuberías, válvulas y buscar posibles fugas.
+- **Criterio de resolución:** Caudal vuelve por debajo del umbral durante al menos 5 minutos.
 
-El detector consultará InfluxDB para obtener las lecturas recientes de cada sensor.
+### R02: Flujo fuera del horario operativo
+- **Objetivo:** Identificar usos de agua nocturnos o en fines de semana.
+- **Condición:** `flow_rate` > umbral mínimo (ej. 5 L/min) fuera de horario.
+- **Persistencia:** Al menos 5 minutos.
+- **Severidad:** `WARNING`
+- **Acción recomendada:** Verificar llaves abiertas o personal fuera de horario.
+- **Criterio de resolución:** Caudal vuelve a cero.
 
-La consulta se realizará usando:
-- `sensor_id`
-- ventana de tiempo reciente, por ejemplo últimos 5 o 10 minutos
-- variable monitoreada, como `flow_rate` o `cumulative_volume`
-- ubicación del sensor
+### R03: Sensor sin comunicación
+- **Objetivo:** Monitorear el estado de salud (healthcheck) de la red IoT.
+- **Condición:** Ausencia total de datos del sensor.
+- **Persistencia:** Más de 10 minutos sin registros.
+- **Severidad:** `INFO` (o `WARNING`).
+- **Acción recomendada:** Revisar alimentación eléctrica, red, broker MQTT.
+- **Criterio de resolución:** Recepción de un nuevo dato válido.
 
-El objetivo es determinar si el comportamiento del consumo de agua se mantiene dentro de los rangos esperados o si cumple una regla de anomalía.
+### R04: Consumo diario excesivo
+- **Objetivo:** Evitar sobrepasar la capacidad o presupuesto hídrico.
+- **Condición:** `cumulative_volume` > consumo esperado diario.
+- **Persistencia:** N/A (Se dispara en cuanto se supera).
+- **Severidad:** `CRITICAL`
+- **Acción recomendada:** Realizar auditoría de consumo en la zona afectada.
+- **Criterio de resolución:** Inicio de un nuevo día (reinicio del acumulado).
 
-## 6. Funcionamiento del bot de alertas
+## 5. Política de Debounce (Cooldown)
 
-El bot será el canal encargado de notificar al equipo cuando se detecte una anomalía.
+Para evitar saturar de notificaciones (spam) a los usuarios cuando un sensor oscila sobre el umbral:
+- Se implementa un registro en memoria de las alertas enviadas exitosamente.
+- La clave del cooldown es la combinación exacta de `(sensor_id, rule_id)`. **No** depende del valor ni la descripción.
+- Si una alerta para ese sensor y regla se envió en los últimos `ALERT_COOLDOWN_SECONDS` (ej. 300s = 5 min), el estado de envío será `SUPPRESSED`.
+- Si el envío HTTP falla, **no** se registra el cooldown, para reintentarlo en el próximo ciclo.
 
-Cada mensaje de alerta debería incluir:
-- ID del sensor.
-- Zona afectada.
-- Regla activada.
-- Valor detectado.
-- Severidad.
-- Hora del evento.
-- Acción sugerida.
+## 6. Parámetros configurables y seguridad de credenciales
 
-Ejemplo de mensaje:
+El sistema utiliza variables de entorno (archivo `.env`) para evitar el registro accidental (hardcoding) de información sensible en GitHub:
+- `TELEGRAM_BOT_TOKEN`: Token otorgado por BotFather.
+- `TELEGRAM_CHAT_ID`: ID del chat de destino.
+- `ALERT_COOLDOWN_SECONDS`: (Opcional, por defecto 300) Tiempo en segundos para el debounce.
+
+El archivo `.env` está en `.gitignore` para máxima seguridad.
+
+## 7. Plantillas de Telegram
+
+El bot procesa la estructura `Alert` y genera un mensaje HTML. Ejemplo:
 
 ```text
-🚨 Alerta crítica SmartH2O
+🚨 ALERTA CRÍTICA – SmartH2O
 
-Sensor: SH2O-ZA-001  
-Zona: Sanitarios piso 1  
-Regla activada: R01 - Posible fuga  
-Caudal detectado: 22.5 L/min  
-Severidad: critical  
-Hora: 2026-06-18 10:30  
+Regla: R01
+Sensor: SH2O-ZA-001
+Zona: Sanitarios piso 1
+Valor detectado: 22.50 L/min
+Umbral: 20.00 L/min
 
-Acción sugerida: revisar el punto de medición y validar posible fuga.
+Descripción:
+Caudal superior al límite permitido.
+
+Acción recomendada:
+Revisar el punto de medición y validar posible fuga.
+
+Fecha: 2026-06-18 10:30:00
 ```
-
-## 7. Política de cooldown
-
-Para evitar el envío repetido de alertas del mismo sensor, se propone aplicar un tiempo de espera entre notificaciones.
-
-Variable sugerida:
-
-`ALERT_COOLDOWN_SECONDS = 300`
-
-Esto equivale a 5 minutos.
-
-La alerta no se volverá a enviar para el mismo sensor y la misma regla hasta que pase ese tiempo.
-
-## 8. Pendientes de validación
-
-- Confirmar si la conexión será mediante MQTT o REST.
-- Confirmar si InfluxDB será la base de datos definitiva.
-- Validar los umbrales con el equipo.
-- Confirmar si el canal principal de alertas será Telegram, email o ambos.
-- Coordinar con la persona encargada de InfluxDB para definir cómo se harán las consultas.
-- Confirmar si las reglas estarán en código, Grafana Alerting o en otro módulo detector.

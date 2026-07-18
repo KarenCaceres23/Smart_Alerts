@@ -6,10 +6,13 @@ En este repositorio presento el módulo de notificaciones por Telegram que desar
 
 Para este módulo, realicé la integración directa con la API de Telegram. Entre las principales características y mecanismos que implementé, destacan:
 
-* **Formato HTML:** Las alertas se envían con una estructura clara que incluye nivel de severidad y hora exacta.
+* **Estructura de Datos Robusta:** Implementé un modelo basado en la clase `Alert` (una `dataclass` inmutable), asegurando que todas las alertas contengan información estandarizada (sensor, regla, zona, valor, etc.).
+* **Severidades Estandarizadas:** A través de la enumeración `Severity`, el sistema soporta exclusivamente niveles `INFO`, `WARNING` y `CRITICAL`, garantizando consistencia.
+* **Estados de Envío Claros:** Utilizando la enumeración `SendStatus`, el bot devuelve estados precisos y verificables (`SENT`, `SUPPRESSED` por debounce, o `FAILED`).
+* **Formato HTML:** Las alertas se envían con una estructura clara que incluye formato a 2 decimales para las lecturas (ej. `42.50 L/min`), nivel de severidad con emojis y hora exacta.
 * **Seguridad de credenciales:** Configuré el uso de variables de entorno (`.env`) para no exponer los tokens en el código fuente.
-* **Protección Anti-Spam (Cooldown):** Desarrollé una lógica en memoria que evita que el sistema envíe alertas repetidas si un sensor falla, protegiendo así el chat.
-* **Scripts de soporte:** Creé un script auxiliar (`get_chat_id.py`) para facilitar la obtención del ID del grupo, y un script de validación (`test_bot.py`) para comprobar que todo funcione.
+* **Protección Anti-Spam (Cooldown):** Desarrollé una lógica en memoria estricta y delegada a la clase `TelegramBot` que evita enviar alertas repetidas si se detecta la misma anomalía (misma regla en el mismo sensor) dentro del tiempo de espera.
+* **Scripts de soporte:** Creé un script auxiliar (`get_chat_id.py`) para facilitar la obtención del ID del grupo, y un script exhaustivo de validación (`test_bot.py`) para comprobar los diferentes casos de uso.
 
 ## Preparación del Entorno
 
