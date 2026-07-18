@@ -1,4 +1,4 @@
-from telegram_bot import Alert, SendStatus, Severity, TelegramBot
+from src.telegram_bot import Alert, SendStatus, Severity, TelegramBot
 
 
 def main() -> None:

@@ -42,3 +42,7 @@ Las anomalías se agrupan en las siguientes reglas conceptuales. Debido a la var
 ## 6. Severidades
 
 El sistema utiliza niveles normalizados (`INFO`, `WARNING`, `CRITICAL`) de acuerdo con la política general documentada en `mecanismo_deteccion_alertas.md`. Las notificaciones se enviarán mediante el Bot de Telegram de SmartH2O.
+
+## 7. Decisiones de Arquitectura (Validado)
+* **Base de datos:** Se utilizará de forma definitiva **InfluxDB** para almacenar todo el histórico temporal.
+* **Motor de reglas:** En producción, las reglas de detección estarán gestionadas desde **Grafana Alerting**, mientras que el presente desarrollo (Fase 3) proporciona una implementación de referencia en Python para probar la integración completa del sistema.

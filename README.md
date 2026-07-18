@@ -14,31 +14,51 @@ Para este módulo, realicé la integración directa con la API de Telegram. Entr
 * **Protección Anti-Spam (Cooldown):** Desarrollé una lógica en memoria estricta y delegada a la clase `TelegramBot` que evita enviar alertas repetidas si se detecta la misma anomalía (misma regla en el mismo sensor) dentro del tiempo de espera.
 * **Scripts de soporte:** Creé un script auxiliar (`get_chat_id.py`) para facilitar la obtención del ID del grupo, y un script exhaustivo de validación (`test_bot.py`) para comprobar los diferentes casos de uso.
 
-## Preparación del Entorno
+## Estructura del Proyecto (Fase 3)
 
-Para poner en marcha el proyecto, es necesario instalar las dependencias que configuré. Asegúrate de estar dentro de la carpeta y ejecuta:
-
-```bash
-pip install -r requirements.txt
+```text
+Smart_Alerts/
+├── src/
+│   ├── __init__.py
+│   ├── main.py              # Orquestador principal
+│   ├── config.py            # Configuraciones simuladas
+│   ├── models.py            # Dataclasses inmutables (SensorReading, SensorConfig)
+│   ├── rules.py             # Lógica pura de reglas (R01-R04)
+│   ├── detector.py          # Clase Detector con persistencia en memoria
+│   ├── influx_client.py     # Repositorio de InfluxDB
+│   ├── telegram_bot.py      # Envío y debounce de alertas
+│   └── get_chat_id.py       
+├── tests/                   # Pruebas unitarias para Fase 3 (pytest)
+│   ├── test_rules.py
+│   ├── test_detector.py
+│   └── test_influx_client.py
+├── docs/
+│   └── fase_3_deteccion.md  # Documentación técnica de detección
+├── .env.example
+├── requirements.txt
+└── README.md
 ```
 
-*(En Linux, si usas un entorno virtual, actívalo antes con `source .venv/bin/activate`).*
+## Configuración y Variables de Entorno
 
-## Configuración de Credenciales
+Renombra el archivo `.env.example` a `.env` y asegúrate de configurar tanto Telegram como InfluxDB:
+```ini
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+ALERT_COOLDOWN_SECONDS=300
 
-Para que el bot tenga acceso, dejé un archivo de plantilla llamado `.env.example`. Solo tienes que copiarlo y crear tu propio archivo `.env`:
-
-```bash
-cp .env.example .env
+INFLUXDB_URL=http://localhost:8086
+INFLUXDB_TOKEN=your_token
+INFLUXDB_ORG=your_org
+INFLUXDB_BUCKET=your_bucket
+INFLUXDB_MEASUREMENT=water_flow
+INFLUXDB_FLOW_FIELD=flow_rate
+INFLUXDB_VOLUME_FIELD=daily_volume
 ```
 
-Dentro de tu nuevo archivo `.env`, debes llenar estos tres datos:
-
-```env
-TELEGRAM_BOT_TOKEN=tu_token_aqui
-TELEGRAM_CHAT_ID=tu_chat_id_aqui
-ALERT_COOLDOWN_SECONDS=60
-```
+## Ejecución y Pruebas
+- Para correr las pruebas unitarias de persistencia, reglas e InfluxDB: `pytest -v`
+- Para correr una ronda simulada de detección: `python -m src.main`
 
 * `TELEGRAM_BOT_TOKEN`: El token que te entrega BotFather al registrar el bot.
 * `TELEGRAM_CHAT_ID`: El número identificador del chat donde llegarán las alertas.
