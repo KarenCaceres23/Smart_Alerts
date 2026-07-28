@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "smart-alerts"
+version = "0.1.0"
+description = "Módulo de notificaciones por Telegram para SmartH2O"
+authors = ["Karen Caceres <karen@example.com>"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --import-mode=importlib"
+testpaths = [
+    "tests",
+]
+pythonpath = [
+    "."
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']

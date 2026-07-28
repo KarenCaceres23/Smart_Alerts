@@ -1,23 +1,49 @@
 import logging
 from datetime import datetime
-from dotenv import load_dotenv
+import pytz
 
-from src.config import get_sensor_configs
-from src.detector import Detector
-from src.influx_client import InfluxSensorRepository
-from src.telegram_bot import TelegramBot, SendStatus
+from src.smart_alerts.config import load_config, AppConfig
+from src.smart_alerts.utils.logging_config import setup_logging
+from src.smart_alerts.cooldown.memory import MemoryCooldownManager
+from src.smart_alerts.notifier.telegram import TelegramNotifier
+from src.smart_alerts.detector import Detector
+from src.smart_alerts.models import SensorConfig, SendStatus
+from src.smart_alerts.audit import AuditLogger
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Simulamos la carga de configuraciones por sensor por simplicidad académica
+def get_sensor_configs() -> list[SensorConfig]:
+    return [
+        SensorConfig(
+            sensor_id="SH2O-ZA-001",
+            zone="Sanitarios piso 1",
+            critical_flow_threshold=20.0,
+            off_hours_flow_threshold=5.0,
+            daily_volume_limit=1000.0,
+            operating_start_hour=7,
+            operating_end_hour=19,
+            critical_persistence_seconds=600,
+            off_hours_persistence_seconds=300,
+            offline_timeout_seconds=600
+        )
+    ]
+
 logger = logging.getLogger(__name__)
 
 class MonitoringService:
-    """Orquestador que coordina la recolección, detección y notificación."""
+    """Orquestador principal."""
     def __init__(self):
-        self.repository = InfluxSensorRepository()
-        self.detector = Detector()
-        self.bot = TelegramBot()
+        self.config = load_config()
+        setup_logging(self.config.log_level, self.config.app_timezone, self.config.telegram_bot_token)
+        
+        self.audit_logger = AuditLogger(self.config.audit_log_path, self.config.app_timezone)
+        self.cooldown_manager = MemoryCooldownManager(self.config.alert_cooldown_seconds)
+        self.notifier = TelegramNotifier(self.config, self.cooldown_manager, self.audit_logger)
+        
+        self.detector = Detector(self.config.alert_debounce_seconds, self.audit_logger, self.config.app_timezone)
         self.configs = get_sensor_configs()
+        
+        # En una app real, aquí se inicializaría el repositorio de InfluxDB
+        self.repository = None 
 
     def run_detection_cycle(self):
         logger.info("Iniciando ciclo de detección...")
@@ -31,55 +57,43 @@ class MonitoringService:
             "errors": 0
         }
         
-        current_time = datetime.now()
+        tz = pytz.timezone(self.config.app_timezone)
+        current_time = datetime.now(tz)
         
         for config in self.configs:
             stats["processed"] += 1
             try:
-                # 1. Obtener lectura
-                reading = self.repository.get_latest_reading(config.sensor_id, config.zone)
+                # Aquí normalmente buscaríamos la lectura de InfluxDB
+                reading = None
                 
-                # 2. Evaluar reglas
                 alerts = []
                 if reading:
                     alerts.extend(self.detector.evaluate_reading(reading, config, current_time))
                 else:
-                    # Si no hay lectura, evaluamos R03
-                    # Suponemos que last_valid_reading es None para forzar timeout, 
-                    # en un caso real guardaríamos el último timestamp conocido.
                     alerts.extend(self.detector.evaluate_offline_sensor(config, None, current_time))
                 
-                # 3. Enviar alertas detectadas
                 for alert in alerts:
                     stats["detected"] += 1
-                    status = self.bot.send_alert(alert)
+                    result = self.notifier.send(alert)
                     
-                    if status == SendStatus.SENT:
+                    if result.status == SendStatus.SENT:
                         stats["sent"] += 1
-                        logger.info(f"Alerta enviada: {alert.rule_id} en {alert.sensor_id}")
-                    elif status == SendStatus.SUPPRESSED:
+                    elif result.status == SendStatus.SUPPRESSED:
                         stats["suppressed"] += 1
-                        logger.info(f"Alerta suprimida (cooldown): {alert.rule_id} en {alert.sensor_id}")
                     else:
                         stats["failed"] += 1
-                        logger.error(f"Fallo al enviar alerta: {alert.rule_id} en {alert.sensor_id}")
                         
             except Exception as e:
                 stats["errors"] += 1
-                logger.error(f"Error procesando sensor {config.sensor_id}: {str(e)}")
+                logger.error(f"Error procesando sensor {config.sensor_id}", exc_info=True)
                 
-        # Cerrar repositorio
-        self.repository.close()
+        # Limpieza de memoria
+        self.cooldown_manager.cleanup()
         
-        # Imprimir resumen final
-        print("\n--- Resumen de Ejecución ---")
-        print(f"Sensores procesados: {stats['processed']}")
-        print(f"Alertas detectadas: {stats['detected']}")
-        print(f"Alertas enviadas: {stats['sent']}")
-        print(f"Alertas suprimidas: {stats['suppressed']}")
-        print(f"Errores: {stats['errors']}")
+        logger.info(f"Resumen de Ejecución: Procesados={stats['processed']}, Detectados={stats['detected']}, Enviados={stats['sent']}, Suprimidos={stats['suppressed']}, Fallidos={stats['failed']}, Errores={stats['errors']}")
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
     load_dotenv()
     service = MonitoringService()
     service.run_detection_cycle()

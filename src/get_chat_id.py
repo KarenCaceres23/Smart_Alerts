@@ -1,93 +1,72 @@
 import os
+import sys
+import logging
 import requests
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
-load_dotenv()
+# Basic config just for this script
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
-# Obtener solo el token
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
-def get_chat_id():
-    """
-    Obtiene los últimos mensajes enviados al bot para extraer el chat_id.
-    """
-    print("========================================")
-    print("🔍 Herramienta para obtener CHAT_ID")
-    print("========================================\n")
+def main():
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
     
-    if not TELEGRAM_BOT_TOKEN:
-        print("❌ Error: TELEGRAM_BOT_TOKEN no está configurado.")
-        print("💡 Por favor, configura tu archivo .env primero.")
-        return
-
-    print("⏳ Obteniendo actualizaciones de Telegram de forma segura...\n")
-    
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+    if not token or token == "your_telegram_bot_token":
+        logger.error("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en tu archivo .env")
+        sys.exit(1)
+        
+    url = f"https://api.telegram.org/bot{token}/getUpdates"
     
     try:
+        logger.info("Conectando con Telegram...")
         response = requests.get(url, timeout=10)
-        response.raise_for_status()
         
+        if response.status_code == 401:
+            logger.error("❌ ERROR 401: Token inválido. Verifica tu .env")
+            sys.exit(1)
+            
+        response.raise_for_status()
         data = response.json()
         
         if not data.get("ok"):
-            print(f"❌ Error de Telegram: {data.get('description')}")
-            return
+            logger.error(f"❌ Telegram respondió con error: {data.get('description')}")
+            sys.exit(1)
             
-        resultados = data.get("result", [])
+        results = data.get("result", [])
+        if not results:
+            logger.info("ℹ️ No hay mensajes nuevos. Por favor, envía un mensaje a tu bot en Telegram y vuelve a correr este script.")
+            sys.exit(0)
+            
+        logger.info("\n--- CHATS DETECTADOS ---")
+        logger.info("⚠️ NUNCA compartas capturas de pantalla de estos IDs en público.\n")
         
-        if not resultados:
-            print("⚠️ No se encontraron mensajes recientes.")
-            print("\n💡 INSTRUCCIONES:")
-            print("1. Abre Telegram.")
-            print("2. Busca tu bot o ve al grupo donde lo agregaste.")
-            print("3. Escríbele cualquier mensaje (por ejemplo: 'Hola').")
-            print("4. Vuelve aquí y ejecuta este script nuevamente.")
-            return
+        # Encontrar el último mensaje de cada chat
+        chats = {}
+        for update in results:
+            message = update.get("message", update.get("my_chat_member", {}))
+            chat = message.get("chat")
+            if chat:
+                chat_id = chat.get("id")
+                chat_type = chat.get("type")
+                chat_title = chat.get("title", chat.get("username", "Sin nombre"))
+                chats[chat_id] = {"title": chat_title, "type": chat_type}
+                
+        for cid, info in chats.items():
+            # Ocultamos parcialmente para evitar filtraciones completas en logs públicos
+            str_id = str(cid)
+            safe_id = str_id[:3] + "*" * (len(str_id) - 5) + str_id[-2:] if len(str_id) > 5 else str_id
             
-        print("✅ ¡Se encontraron mensajes!\n")
-        print("--- RESULTADOS ---")
+            logger.info(f"ID: {cid} (Seguro: {safe_id}) | Tipo: {info['type']} | Nombre/User: {info['title']}")
+            
+        logger.info("\nPara tu .env, usa el número completo (incluyendo el guion si es grupo).")
         
-        for actualizacion in resultados:
-            # Soportar tanto mensajes directos como notificaciones de añadir al grupo
-            msg_data = actualizacion.get("message") or actualizacion.get("my_chat_member", {}).get("chat", {})
-            
-            if not msg_data:
-                continue
-                
-            chat = msg_data if "id" in msg_data else msg_data.get("chat", {})
-            
-            chat_id = chat.get('id', 'Desconocido')
-            tipo_chat = chat.get('type', 'Desconocido')
-            titulo = chat.get('title', chat.get('first_name', 'Sin Nombre'))
-            
-            # Formatear el tipo de chat
-            if tipo_chat == "private":
-                tipo_str = "👤 Chat Privado"
-            elif tipo_chat in ["group", "supergroup"]:
-                tipo_str = "👥 Grupo / Supergrupo"
-            elif tipo_chat == "channel":
-                tipo_str = "📢 Canal"
-            else:
-                tipo_str = f"Otro ({tipo_chat})"
-                
-            print(f"Tipo: {tipo_str}")
-            print(f"Nombre: {titulo}")
-            print(f"👉 TU CHAT_ID ES: {chat_id}")
-            
-            # Aclaración para IDs de grupos
-            if str(chat_id).startswith("-"):
-                print("ℹ️ Nota: En grupos es completamente normal que el CHAT_ID empiece con un número negativo (ej. -100...).")
-                
-            print("-" * 30)
-            
-        print("\n📋 Copia el CHAT_ID correspondiente y pégalo en tu archivo .env")
-        
+    except requests.exceptions.Timeout:
+        logger.error("❌ ERROR: Tiempo de espera agotado. Revisa tu conexión a internet.")
+    except requests.exceptions.ConnectionError:
+        logger.error("❌ ERROR: No se pudo conectar a los servidores de Telegram.")
     except Exception as e:
-        # Nunca imprimir el error directo si contiene el token
-        safe_error = str(e).replace(TELEGRAM_BOT_TOKEN, "***TOKEN_OCULTO***")
-        print(f"❌ Error al conectar con Telegram: {safe_error}")
+        logger.error(f"❌ ERROR INESPERADO al obtener el chat_id.")
 
 if __name__ == "__main__":
-    get_chat_id()
+    main()

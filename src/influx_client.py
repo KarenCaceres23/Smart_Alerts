@@ -5,7 +5,7 @@ from typing import Optional
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.exceptions import InfluxDBError
 
-from src.models import SensorReading
+from src.smart_alerts.models import SensorReading
 
 logger = logging.getLogger(__name__)
 

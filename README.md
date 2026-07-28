@@ -1,99 +1,96 @@
-# SmartH2O Telegram Bot
+# SmartH2O Telegram Bot & Alertas
 
-En este repositorio presento el módulo de notificaciones por Telegram que desarrollé para el proyecto académico **SmartH2O**. Su función principal es enviar alertas automatizadas a un grupo o usuario cuando el sistema detecta un evento importante.
+Módulo de alertas para el proyecto académico **SmartH2O**, diseñado con arquitectura escalable, pruebas unitarias y manejo robusto de notificaciones hacia Telegram.
 
-## Descripción del Desarrollo
+## Estado de la Arquitectura
 
-Para este módulo, realicé la integración directa con la API de Telegram. Entre las principales características y mecanismos que implementé, destacan:
+| Componente | Diseñado | Implementado | Probado |
+|------------|----------|-------------|---------|
+| Notificador Telegram | Sí | Sí | Sí (Mocks) |
+| Cooldown en Memoria | Sí | Sí | Sí |
+| Reglas de Detección (R01-R04) | Sí | Sí (Básico) | Sí |
+| Cliente InfluxDB | Sí | No (Simulado) | No |
+| Almacenamiento Cooldown Distribuido (Redis) | Sí | No | No |
 
-* **Estructura de Datos Robusta:** Implementé un modelo basado en la clase `Alert` (una `dataclass` inmutable), asegurando que todas las alertas contengan información estandarizada (sensor, regla, zona, valor, etc.).
-* **Severidades Estandarizadas:** A través de la enumeración `Severity`, el sistema soporta exclusivamente niveles `INFO`, `WARNING` y `CRITICAL`, garantizando consistencia.
-* **Estados de Envío Claros:** Utilizando la enumeración `SendStatus`, el bot devuelve estados precisos y verificables (`SENT`, `SUPPRESSED` por debounce, o `FAILED`).
-* **Formato HTML:** Las alertas se envían con una estructura clara que incluye formato a 2 decimales para las lecturas (ej. `42.50 L/min`), nivel de severidad con emojis y hora exacta.
-* **Seguridad de credenciales:** Configuré el uso de variables de entorno (`.env`) para no exponer los tokens en el código fuente.
-* **Protección Anti-Spam (Cooldown):** Desarrollé una lógica en memoria estricta y delegada a la clase `TelegramBot` que evita enviar alertas repetidas si se detecta la misma anomalía (misma regla en el mismo sensor) dentro del tiempo de espera.
-* **Scripts de soporte:** Creé un script auxiliar (`get_chat_id.py`) para facilitar la obtención del ID del grupo, y un script exhaustivo de validación (`test_bot.py`) para comprobar los diferentes casos de uso.
+*Nota: Actualmente el sistema procesa datos simulados o en memoria. La conexión real con InfluxDB y la persistencia en base de datos están diseñadas pero pendientes de implementación para la siguiente fase.*
 
-## Estructura del Proyecto (Fase 3)
+## Requisitos y Configuración
 
-```text
-Smart_Alerts/
-├── src/
-│   ├── __init__.py
-│   ├── main.py              # Orquestador principal
-│   ├── config.py            # Configuraciones simuladas
-│   ├── models.py            # Dataclasses inmutables (SensorReading, SensorConfig)
-│   ├── rules.py             # Lógica pura de reglas (R01-R04)
-│   ├── detector.py          # Clase Detector con persistencia en memoria
-│   ├── influx_client.py     # Repositorio de InfluxDB
-│   ├── telegram_bot.py      # Envío y debounce de alertas
-│   └── get_chat_id.py       
-├── tests/                   # Pruebas unitarias para Fase 3 (pytest)
-│   ├── test_rules.py
-│   ├── test_detector.py
-│   └── test_influx_client.py
-├── docs/
-│   └── fase_3_deteccion.md  # Documentación técnica de detección
-├── .env.example
-├── requirements.txt
-└── README.md
-```
-
-## Configuración y Variables de Entorno
-
-Renombra el archivo `.env.example` a `.env` y asegúrate de configurar tanto Telegram como InfluxDB:
-```ini
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-TELEGRAM_CHAT_ID=your_telegram_chat_id
-ALERT_COOLDOWN_SECONDS=300
-
-INFLUXDB_URL=http://localhost:8086
-INFLUXDB_TOKEN=your_token
-INFLUXDB_ORG=your_org
-INFLUXDB_BUCKET=your_bucket
-INFLUXDB_MEASUREMENT=water_flow
-INFLUXDB_FLOW_FIELD=flow_rate
-INFLUXDB_VOLUME_FIELD=daily_volume
-```
+1. Instalar Python 3.10+ y dependencias:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Configurar variables de entorno copiando `.env.example` a `.env`:
+   ```bash
+   TELEGRAM_BOT_TOKEN=your_token
+   TELEGRAM_CHAT_ID=your_id
+   TELEGRAM_TIMEOUT_SECONDS=10
+   TELEGRAM_MAX_RETRIES=3
+   TELEGRAM_BACKOFF_SECONDS=2
+   ALERT_COOLDOWN_SECONDS=300
+   APP_TIMEZONE=America/El_Salvador
+   ```
 
 ## Ejecución y Pruebas
-- Para correr las pruebas unitarias de persistencia, reglas e InfluxDB: `pytest -v`
-- Para correr una ronda simulada de detección: `python -m src.main`
 
-* `TELEGRAM_BOT_TOKEN`: El token que te entrega BotFather al registrar el bot.
-* `TELEGRAM_CHAT_ID`: El número identificador del chat donde llegarán las alertas.
-* `ALERT_COOLDOWN_SECONDS`: El tiempo en segundos que el sistema debe esperar antes de dejar pasar una alerta repetida.
-
-### Notas de Seguridad Implementadas
-
-Como medida de seguridad para el repositorio, apliqué las siguientes reglas:
-* El archivo `.env` está configurado para ser ignorado por Git, por lo que nunca se subirá a GitHub.
-* Ningún token o contraseña se coloca directamente dentro de los scripts `.py`.
-* Si alguna vez el token llega a filtrarse accidentalmente, recuerda revocarlo de inmediato usando `/revoke` en BotFather.
-
-## ¿Cómo obtener tu Chat ID?
-
-Si no conoces tu `TELEGRAM_CHAT_ID`, asegúrate de enviarle un mensaje de prueba al bot desde tu Telegram y luego ejecuta el script que preparé:
-
+### Uso manual
+Para obtener tu Chat ID de forma segura:
 ```bash
 python src/get_chat_id.py
 ```
-*(Si lo agregaste a un grupo, es normal que el ID empiece con un signo negativo `-100...`).*
 
-## Ejecución de Pruebas
-
-Una vez configurado tu `.env`, puedes validar toda la integración ejecutando:
-
+Para correr una ronda de detección simulada:
 ```bash
-python src/test_bot.py
+python -m src.main
 ```
 
-Al correrlo, notarás que la primera alerta llega correctamente a tu Telegram, pero el segundo intento es bloqueado intencionalmente por la consola para demostrar que el sistema anti-spam (cooldown) que diseñé está funcionando correctamente.
+### Automatización (Pruebas)
+Para ejecutar la batería completa de pruebas unitarias garantizando que el sistema cumple los requisitos (incluyendo timeout, backoff 429, validaciones de severidad y cooldown en memoria):
+```bash
+pytest tests/unit -v
+```
+También puedes correr los linters:
+```bash
+black --check src tests
+ruff check src tests
+```
 
-## Solución de Problemas Comunes
+## Arquitectura
 
-Si al probarlo te encuentras con algún error, revisa estos puntos:
+El núcleo está contenido en `src/smart_alerts/`:
+- **config.py:** Validación estricta y segura de entorno.
+- **models.py:** Estructuras inmutables (`Alert`, `Severity`).
+- **cooldown/:** Abstracción de estado anti-spam. Actualmente usa memoria con `time.monotonic()` y recolección de basura.
+- **notifier/:** Cliente HTTP robusto con backoff y reintentos.
+- **detector.py y rules.py:** Evaluación modular de umbrales.
 
-* **Error 401 Unauthorized:** Probablemente hay un error de tipeo en el token o fue revocado. Revisa tu `.env`.
-* **Chat not found:** El bot no encuentra tu chat. Asegúrate de haberle mandado un mensaje primero en Telegram para registrar la conversación.
-* **getUpdates devuelve vacío:** La API de Telegram a veces limpia el historial rápido. Solo mándale otro mensaje al bot y vuelve a correr `get_chat_id.py`.
+Para retrocompatibilidad, existe el wrapper en `src/telegram_bot.py` que permite usar `send_telegram_alert(...)` desde scripts legacy.
+
+## Mecanismos de Prevención de Spam y Reintentos
+
+### Debounce vs Cooldown
+- **Debounce (Supresión Temprana):** Se evalúa *antes* de crear la alerta. El `Detector` mide por cuánto tiempo consecutivo (`time_active`) una anomalía está presente usando una variable global `ALERT_DEBOUNCE_SECONDS`. Si la anomalía parpadea (varía repetidamente por arriba y por debajo del umbral en poco tiempo), el debounce evita que se envíen múltiples alertas. Una vez superado el umbral temporal, la alerta se pasa al Notificador.
+- **Cooldown (Período de Silencio):** Se evalúa *antes* de enviar una alerta a Telegram. Una vez que se envía con éxito una alerta específica (identificada de forma estable por la regla y el sensor), el `CooldownManager` la bloquea durante `ALERT_COOLDOWN_SECONDS` minutos. El cooldown solo se consume cuando la alerta es despachada exitosamente (ok=True).
+
+### Política de Reintentos (Retries) y Tratamiento de Errores
+El sistema está diseñado para manejar incidencias de red respetando las políticas de la API:
+- **Errores Recuperables:** Fallos de conexión (`ConnectionError`), agotamiento de tiempo de espera (`Timeout`) y errores genéricos (`HTTP 500`). Estos se reintentan hasta un máximo de `TELEGRAM_MAX_RETRIES` veces, esperando `TELEGRAM_BACKOFF_SECONDS` entre cada intento.
+- **Límite de Tasa (HTTP 429 - Too Many Requests):** Cuando Telegram solicita frenar, el notificador suspende el hilo inmediatamente leyendo el cabezal `retry_after`. Los reintentos por 429 *no* consumen el presupuesto de `TELEGRAM_MAX_RETRIES`.
+- **Errores Definitivos:** Errores de cliente (HTTP 400, 401, 403, 404) y respuestas ilógicas (`ok: False` sin razón recuperable) detienen inmediatamente el envío sin reintentar ni consumir el cooldown.
+
+### Registro de Auditoría (Audit Log)
+El sistema guarda un log estructurado (JSONL) en `AUDIT_LOG_PATH` documentando todos los cambios de estado en la máquina de auditoría:
+- `DETECTED`: Anomalía vista por primera vez, inicio del Debounce.
+- `PENDING_DEBOUNCE`: La anomalía sigue presente pero aún no supera `ALERT_DEBOUNCE_SECONDS`.
+- `RESOLVED`: La anomalía regresó a la normalidad.
+- `SENT`: Alerta enviada con éxito.
+- `RETRYING`: Intento fallido pero recuperable.
+- `FAILED`: Intento fallido permanente o límite de intentos superado.
+- `SUPPRESSED`: Suprimido por la política de Cooldown.
+El log no contiene tokens ni datos sensibles.
+
+## Seguridad
+
+- El `.env` está en `.gitignore`.
+- Los logs enmascaran el `TELEGRAM_BOT_TOKEN` (si es capturado).
+- `get_chat_id.py` oculta parcialmente los IDs devueltos por la API para evitar filtraciones.
