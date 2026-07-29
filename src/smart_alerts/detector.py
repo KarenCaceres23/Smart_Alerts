@@ -122,7 +122,7 @@ class Detector:
                 severity=result.severity,
                 occurred_at=reading.timestamp
             )
-        else:
+        elif time_active > 0:
             if self.audit_logger:
                 self.audit_logger.log_event(
                     state=AuditState.PENDING_DEBOUNCE,

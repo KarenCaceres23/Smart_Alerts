@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from src.smart_alerts.notifier.telegram import TelegramNotifier
 from src.smart_alerts.models import Alert, Severity, SendStatus
 from src.smart_alerts.config import AppConfig
+import logging
 
 class DummyCooldownManager:
     def __init__(self, in_cooldown=False):
@@ -29,6 +30,8 @@ def config():
         telegram_max_retries=2,
         telegram_backoff_seconds=0, # 0 for fast tests
         alert_cooldown_seconds=300,
+        alert_debounce_seconds=60,
+        audit_log_path="audit.jsonl",
         app_timezone="UTC",
         log_level="INFO"
     )

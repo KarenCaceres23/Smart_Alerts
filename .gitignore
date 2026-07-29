@@ -8,3 +8,9 @@ venv/
 .coverage
 htmlcov/
 .ruff_cache/
+
+src/smart_alerts.egg-info/
+
+src/smart_alerts.egg-info/
+
+src/smart_alerts.egg-info/

@@ -10,6 +10,8 @@ from src.smart_alerts.notifier.telegram import TelegramNotifier
 from src.smart_alerts.utils.logging_config import setup_logging
 
 # Inicializar un singleton del notificador para mantener el cooldown en memoria
+_notifier = None
+_configured = False
 try:
     _config = load_config()
     setup_logging(_config.log_level, _config.app_timezone, _config.telegram_bot_token)
