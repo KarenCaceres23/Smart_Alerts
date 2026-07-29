@@ -1,6 +1,7 @@
+import logging
 import os
 import sys
-import logging
+
 import requests
 from dotenv import load_dotenv
 
@@ -72,8 +73,8 @@ def main():
         logger.error("❌ ERROR: Tiempo de espera agotado. Revisa tu conexión a internet.")
     except requests.exceptions.ConnectionError:
         logger.error("❌ ERROR: No se pudo conectar a los servidores de Telegram.")
-    except Exception as e:
-        logger.error(f"❌ ERROR INESPERADO al obtener el chat_id.")
+    except Exception:
+        logger.error("❌ ERROR INESPERADO al obtener el chat_id.")
 
 
 if __name__ == "__main__":

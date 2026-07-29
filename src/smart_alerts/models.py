@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any
+from typing import Any
+
 import pytz
 
 
@@ -69,8 +70,8 @@ class SensorReading:
     sensor_id: str
     zone: str
     timestamp: datetime
-    flow_rate: Optional[float]
-    daily_volume: Optional[float]
+    flow_rate: float | None
+    daily_volume: float | None
 
 
 @dataclass(frozen=True)
@@ -94,5 +95,5 @@ class RuleResult:
     severity: Severity
     title: str
     description: str
-    value: Optional[float] = None
-    threshold: Optional[float] = None
+    value: float | None = None
+    threshold: float | None = None

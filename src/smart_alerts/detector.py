@@ -1,20 +1,20 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+
 import pytz
 
-from src.smart_alerts.models import SensorReading, SensorConfig, Alert, Severity, AuditState
-from src.smart_alerts.rules import evaluate_r01, evaluate_r02, evaluate_r04
 from src.smart_alerts.audit import AuditLogger
+from src.smart_alerts.models import Alert, AuditState, SensorConfig, SensorReading, Severity
+from src.smart_alerts.rules import evaluate_r01, evaluate_r02, evaluate_r04
 
 
 class Detector:
     """Clase para evaluar reglas de negocio y generar alertas con persistencia temporal."""
 
     def __init__(
-        self, debounce_seconds: int, audit_logger: Optional[AuditLogger] = None, tz_str: str = "UTC"
+        self, debounce_seconds: int, audit_logger: AuditLogger | None = None, tz_str: str = "UTC"
     ):
         # Maps (sensor_id, rule_id) to the datetime it first triggered
-        self._active_conditions: Dict[tuple[str, str], datetime] = {}
+        self._active_conditions: dict[tuple[str, str], datetime] = {}
         self.debounce_seconds = debounce_seconds
         self.audit_logger = audit_logger
         self.tz = pytz.timezone(tz_str)
@@ -24,7 +24,7 @@ class Detector:
 
     def evaluate_reading(
         self, reading: SensorReading, config: SensorConfig, current_time: datetime | None = None
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         """Evalúa una lectura contra las reglas R01, R02 y R04."""
         alerts = []
 
@@ -62,7 +62,7 @@ class Detector:
         config: SensorConfig,
         last_valid_reading: datetime | None,
         current_time: datetime | None = None,
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         """Evalúa si un sensor está fuera de línea (R03)."""
         if current_time is None:
             current_time = self._now()

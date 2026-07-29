@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
+
 import pytest
 import pytz
-from datetime import datetime, timedelta
+
 from src.smart_alerts.detector import Detector
 from src.smart_alerts.models import SensorConfig, SensorReading
 
@@ -21,8 +23,9 @@ def config():
     )
 
 
-from src.smart_alerts.audit import AuditLogger
 from unittest.mock import MagicMock
+
+from src.smart_alerts.audit import AuditLogger
 
 
 def test_detector_offline_pending(config):

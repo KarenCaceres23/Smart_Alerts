@@ -1,15 +1,15 @@
 import html
-import time
 import logging
-from typing import Optional
+import time
 
 import requests
-from requests.exceptions import Timeout, ConnectionError, RequestException
+from requests.exceptions import ConnectionError, RequestException, Timeout
 
-from src.smart_alerts.models import Alert, Severity, SendStatus, AuditState
+from src.smart_alerts.audit import AuditLogger
 from src.smart_alerts.config import AppConfig
 from src.smart_alerts.cooldown.base import CooldownManager
-from src.smart_alerts.audit import AuditLogger
+from src.smart_alerts.models import Alert, AuditState, SendStatus, Severity
+
 from .base import BaseNotifier, NotifierResult
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class TelegramNotifier(BaseNotifier):
         self,
         config: AppConfig,
         cooldown_manager: CooldownManager,
-        audit_logger: Optional[AuditLogger] = None,
+        audit_logger: AuditLogger | None = None,
     ):
         self.config = config
         self.cooldown_manager = cooldown_manager
@@ -77,7 +77,7 @@ class TelegramNotifier(BaseNotifier):
         # 1. Verificar cooldown
         if self.cooldown_manager.is_in_cooldown(alert.alert_id):
             logger.info(
-                f"Alerta suprimida por cooldown",
+                "Alerta suprimida por cooldown",
                 extra={**log_context, "motivo": "suprimida por cooldown"},
             )
             if self.audit_logger:
@@ -226,7 +226,7 @@ class TelegramNotifier(BaseNotifier):
 
             except Exception as e:
                 last_error = str(e)
-                logger.error(f"Error inesperado al enviar alerta", extra=log_context)
+                logger.error("Error inesperado al enviar alerta", extra=log_context)
                 break
 
         # Si salió del bucle sin retornar, fracasó

@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+
 import pytz
 
-from src.smart_alerts.models import SensorReading, SensorConfig, RuleResult, Severity
+from src.smart_alerts.models import RuleResult, SensorConfig, SensorReading, Severity
 
 
 def is_off_hours(current_time: datetime, start_hour: int, end_hour: int) -> bool:
@@ -18,7 +18,7 @@ def is_off_hours(current_time: datetime, start_hour: int, end_hour: int) -> bool
     return not is_operating
 
 
-def evaluate_r01(reading: SensorReading, config: SensorConfig) -> Optional[RuleResult]:
+def evaluate_r01(reading: SensorReading, config: SensorConfig) -> RuleResult | None:
     """R01 - Caudal crítico."""
     if reading.flow_rate is not None and reading.flow_rate > config.critical_flow_threshold:
         return RuleResult(
@@ -35,7 +35,7 @@ def evaluate_r01(reading: SensorReading, config: SensorConfig) -> Optional[RuleR
 
 def evaluate_r02(
     reading: SensorReading, config: SensorConfig, tz: pytz.tzinfo.BaseTzInfo
-) -> Optional[RuleResult]:
+) -> RuleResult | None:
     """R02 - Flujo fuera del horario operativo."""
     if reading.flow_rate is not None and reading.flow_rate > config.off_hours_flow_threshold:
         local_time = reading.timestamp.astimezone(tz)
@@ -52,7 +52,7 @@ def evaluate_r02(
     return None
 
 
-def evaluate_r04(reading: SensorReading, config: SensorConfig) -> Optional[RuleResult]:
+def evaluate_r04(reading: SensorReading, config: SensorConfig) -> RuleResult | None:
     """R04 - Consumo diario excesivo."""
     if reading.daily_volume is not None and reading.daily_volume > config.daily_volume_limit:
         return RuleResult(

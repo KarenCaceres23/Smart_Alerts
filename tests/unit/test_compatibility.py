@@ -1,5 +1,4 @@
 from unittest import mock
-from src.telegram_bot import send_telegram_alert
 
 
 @mock.patch("src.telegram_bot._notifier")

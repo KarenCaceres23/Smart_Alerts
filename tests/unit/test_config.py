@@ -1,6 +1,6 @@
-import os
 import pytest
-from src.smart_alerts.config import load_config, AppConfig
+
+from src.smart_alerts.config import load_config
 
 
 def test_config_incomplete(monkeypatch):

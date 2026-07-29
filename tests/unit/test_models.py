@@ -1,5 +1,7 @@
-import pytest
 from datetime import datetime, timezone
+
+import pytest
+
 from src.smart_alerts.models import Alert, Severity
 
 

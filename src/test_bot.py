@@ -1,10 +1,9 @@
-import logging
+from src.smart_alerts.audit import AuditLogger
 from src.smart_alerts.config import load_config
+from src.smart_alerts.cooldown.memory import MemoryCooldownManager
 from src.smart_alerts.models import Alert, SendStatus, Severity
 from src.smart_alerts.notifier.telegram import TelegramNotifier
-from src.smart_alerts.cooldown.memory import MemoryCooldownManager
 from src.smart_alerts.utils.logging_config import setup_logging
-from src.smart_alerts.audit import AuditLogger
 
 
 def main() -> None:

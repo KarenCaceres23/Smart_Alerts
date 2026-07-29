@@ -1,8 +1,8 @@
 import logging
 import logging.config
-import os
-import pytz
 from datetime import datetime
+
+import pytz
 
 
 class TimezoneFormatter(logging.Formatter):

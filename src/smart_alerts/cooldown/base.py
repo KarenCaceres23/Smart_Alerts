@@ -13,18 +13,15 @@ class CooldownManager(ABC):
         Verifica si una alerta está en cooldown.
         No modifica el registro de cooldown.
         """
-        pass
 
     @abstractmethod
     def mark_as_sent(self, alert_id: str) -> None:
         """
         Registra el envío exitoso de una alerta, activando su cooldown.
         """
-        pass
 
     @abstractmethod
     def cleanup(self) -> None:
         """
         Limpia registros de cooldown antiguos para liberar espacio.
         """
-        pass

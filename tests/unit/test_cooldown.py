@@ -1,5 +1,5 @@
-import time
 from unittest import mock
+
 from src.smart_alerts.cooldown.memory import MemoryCooldownManager
 
 

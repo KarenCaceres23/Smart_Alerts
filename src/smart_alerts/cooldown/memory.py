@@ -1,5 +1,5 @@
 import time
-from typing import Dict
+
 from .base import CooldownManager
 
 
@@ -12,7 +12,7 @@ class MemoryCooldownManager(CooldownManager):
     def __init__(self, cooldown_seconds: int):
         self.cooldown_seconds = cooldown_seconds
         # Mapea alert_id -> timestamp (time.monotonic())
-        self._registry: Dict[str, float] = {}
+        self._registry: dict[str, float] = {}
 
     def is_in_cooldown(self, alert_id: str) -> bool:
         current_time = time.monotonic()

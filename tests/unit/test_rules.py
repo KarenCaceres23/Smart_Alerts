@@ -1,7 +1,9 @@
-import pytest
 from datetime import datetime
+
+import pytest
 import pytz
-from src.smart_alerts.models import SensorReading, SensorConfig
+
+from src.smart_alerts.models import SensorConfig, SensorReading
 from src.smart_alerts.rules import evaluate_r01, evaluate_r02, evaluate_r04, is_off_hours
 
 

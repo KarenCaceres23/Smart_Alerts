@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
 from src.smart_alerts.models import Alert, SendStatus
 
@@ -11,8 +10,8 @@ class NotifierResult:
 
     status: SendStatus
     attempts: int
-    status_code: Optional[int] = None
-    error: Optional[str] = None
+    status_code: int | None = None
+    error: str | None = None
     skipped_by_cooldown: bool = False
 
 
@@ -26,4 +25,3 @@ class BaseNotifier(ABC):
         """
         Intenta enviar una alerta.
         """
-        pass

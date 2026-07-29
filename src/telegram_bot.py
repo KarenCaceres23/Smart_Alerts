@@ -3,10 +3,9 @@ Este archivo funciona como un wrapper de compatibilidad para código antiguo
 que dependa de `from telegram_bot import send_telegram_alert`.
 """
 
-import logging
 from src.smart_alerts.config import load_config
-from src.smart_alerts.models import Alert, Severity, SendStatus
 from src.smart_alerts.cooldown.memory import MemoryCooldownManager
+from src.smart_alerts.models import Alert, SendStatus, Severity
 from src.smart_alerts.notifier.telegram import TelegramNotifier
 from src.smart_alerts.utils.logging_config import setup_logging
 

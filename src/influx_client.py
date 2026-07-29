@@ -1,7 +1,6 @@
-import os
 import logging
-from datetime import datetime
-from typing import Optional
+import os
+
 from influxdb_client import InfluxDBClient
 from influxdb_client.client.exceptions import InfluxDBError
 
@@ -36,12 +35,12 @@ class InfluxSensorRepository:
             try:
                 self.client = InfluxDBClient(url=self.url, token=self.token, org=self.org)
                 self.query_api = self.client.query_api()
-            except Exception as e:
+            except Exception:
                 logger.error("Error al inicializar el cliente InfluxDB")
 
     def get_latest_reading(
         self, sensor_id: str, zone: str, time_window_minutes: int = 15
-    ) -> Optional[SensorReading]:
+    ) -> SensorReading | None:
         """Obtiene la lectura más reciente de un sensor dentro de una ventana de tiempo."""
         if not self.query_api:
             logger.warning(
@@ -89,10 +88,10 @@ class InfluxSensorRepository:
             )
 
         except InfluxDBError as e:
-            logger.error(f"Error de conexión al consultar InfluxDB para {sensor_id}: {str(e)}")
+            logger.error(f"Error de conexión al consultar InfluxDB para {sensor_id}: {e!s}")
             return None
         except Exception as e:
-            logger.error(f"Error inesperado al procesar lectura de {sensor_id}: {str(e)}")
+            logger.error(f"Error inesperado al procesar lectura de {sensor_id}: {e!s}")
             return None
 
     def close(self):

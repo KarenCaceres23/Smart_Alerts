@@ -1,11 +1,13 @@
-import pytest
-from unittest import mock
-from requests.exceptions import Timeout, ConnectionError, RequestException
-from datetime import datetime, timezone
-from src.smart_alerts.notifier.telegram import TelegramNotifier
-from src.smart_alerts.models import Alert, Severity, SendStatus
-from src.smart_alerts.config import AppConfig
 import logging
+from datetime import datetime, timezone
+from unittest import mock
+
+import pytest
+from requests.exceptions import ConnectionError, RequestException, Timeout
+
+from src.smart_alerts.config import AppConfig
+from src.smart_alerts.models import Alert, SendStatus
+from src.smart_alerts.notifier.telegram import TelegramNotifier
 
 
 class DummyCooldownManager:

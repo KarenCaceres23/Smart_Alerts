@@ -1,8 +1,8 @@
 import json
-from datetime import datetime, timezone
 import logging
-from typing import Optional, Any
+from datetime import datetime, timezone
 from pathlib import Path
+
 from .models import AuditState, Severity
 
 logger = logging.getLogger(__name__)
@@ -25,11 +25,11 @@ class AuditLogger:
         alert_id: str,
         rule_id: str,
         sensor_id: str,
-        severity: Optional[Severity] = None,
-        reason: Optional[str] = None,
-        attempts: Optional[int] = None,
-        latency_ms: Optional[int] = None,
-        error: Optional[str] = None,
+        severity: Severity | None = None,
+        reason: str | None = None,
+        attempts: int | None = None,
+        latency_ms: int | None = None,
+        error: str | None = None,
     ) -> None:
         """Registra un evento de auditoría en el archivo JSONL."""
         now = datetime.now(timezone.utc).isoformat()

@@ -1,14 +1,15 @@
 import logging
 from datetime import datetime
+
 import pytz
 
-from src.smart_alerts.config import load_config, AppConfig
-from src.smart_alerts.utils.logging_config import setup_logging
-from src.smart_alerts.cooldown.memory import MemoryCooldownManager
-from src.smart_alerts.notifier.telegram import TelegramNotifier
-from src.smart_alerts.detector import Detector
-from src.smart_alerts.models import SensorConfig, SendStatus
 from src.smart_alerts.audit import AuditLogger
+from src.smart_alerts.config import load_config
+from src.smart_alerts.cooldown.memory import MemoryCooldownManager
+from src.smart_alerts.detector import Detector
+from src.smart_alerts.models import SendStatus, SensorConfig
+from src.smart_alerts.notifier.telegram import TelegramNotifier
+from src.smart_alerts.utils.logging_config import setup_logging
 
 
 # Simulamos la carga de configuraciones por sensor por simplicidad académica
@@ -91,7 +92,7 @@ class MonitoringService:
                     else:
                         stats["failed"] += 1
 
-            except Exception as e:
+            except Exception:
                 stats["errors"] += 1
                 logger.error(f"Error procesando sensor {config.sensor_id}", exc_info=True)
 
