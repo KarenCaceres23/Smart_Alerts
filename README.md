@@ -12,7 +12,7 @@ Módulo de alertas para el proyecto académico **SmartH2O**, diseñado con arqui
 | Cliente InfluxDB | Sí | No (Simulado) | No |
 | Almacenamiento Cooldown Distribuido (Redis) | Sí | No | No |
 
-*Nota: Actualmente el sistema procesa datos simulados o en memoria. La conexión real con InfluxDB y la persistencia en base de datos están diseñadas pero pendientes de implementación para la siguiente fase.*
+*Estado actual: El proyecto cuenta con lógica de detección, notificación, debounce, cooldown, reintentos, auditoría y pruebas automatizadas. Las integraciones reales con InfluxDB, Telegram y almacenamiento persistente requieren validación adicional en infraestructura real.*
 
 ## Requisitos y Configuración
 
@@ -88,6 +88,18 @@ El sistema guarda un log estructurado (JSONL) en `AUDIT_LOG_PATH` documentando t
 - `FAILED`: Intento fallido permanente o límite de intentos superado.
 - `SUPPRESSED`: Suprimido por la política de Cooldown.
 El log no contiene tokens ni datos sensibles.
+
+## Limitaciones actuales
+
+El proyecto se encuentra en una etapa de validación técnica y todavía presenta las siguientes limitaciones:
+
+- La integración con InfluxDB se encuentra preparada y probada mediante simulaciones, pero requiere validación con una instancia real y datos reales.
+- El almacenamiento de cooldown y debounce utiliza memoria local, por lo que su estado se pierde al reiniciar la aplicación.
+- El registro de auditoría se almacena localmente en formato JSONL y todavía no cuenta con persistencia centralizada.
+- Las pruebas unitarias utilizan mocks para evitar llamadas reales a Telegram y a servicios externos.
+- La validación en GitHub Actions confirma el funcionamiento automatizado del código, pero no sustituye una prueba de integración completa con credenciales e infraestructura reales.
+- El sistema todavía no ha sido sometido a pruebas de carga, alta concurrencia ni despliegue distribuido.
+- La configuración y los umbrales de las reglas deben validarse con datos reales de los sensores antes de utilizarse en producción.
 
 ## Seguridad
 
