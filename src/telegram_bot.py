@@ -2,6 +2,7 @@
 Este archivo funciona como un wrapper de compatibilidad para código antiguo
 que dependa de `from telegram_bot import send_telegram_alert`.
 """
+
 import logging
 from src.smart_alerts.config import load_config
 from src.smart_alerts.models import Alert, Severity, SendStatus
@@ -22,6 +23,7 @@ except Exception as e:
     _configured = False
     print(f"Error cargando configuración para telegram_bot wrapper: {e}")
 
+
 def send_telegram_alert(title: str, description: str, severity: str = "MEDIA") -> bool:
     """
     Función puente para asegurar que integraciones pasadas funcionen sin cambios.
@@ -29,20 +31,20 @@ def send_telegram_alert(title: str, description: str, severity: str = "MEDIA") -
     if not _configured:
         print("El notificador no está configurado correctamente.")
         return False
-        
+
     try:
         sev_enum = Severity(severity)
     except ValueError:
         sev_enum = Severity.MEDIA
-        
+
     # Creamos una alerta genérica para el script puente
     alert = Alert(
         rule_id="MANUAL",
         sensor_id="MANUAL_SCRIPT",
         title=title,
         description=description,
-        severity=sev_enum
+        severity=sev_enum,
     )
-    
+
     result = _notifier.send(alert)
     return result.status == SendStatus.SENT
