@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytz
 
+from src.influx_client import InfluxSensorRepository
 from src.smart_alerts.audit import AuditLogger
 from src.smart_alerts.config import load_config
 from src.smart_alerts.cooldown.memory import MemoryCooldownManager
@@ -23,9 +24,9 @@ def get_sensor_configs() -> list[SensorConfig]:
             daily_volume_limit=1000.0,
             operating_start_hour=7,
             operating_end_hour=19,
-            critical_persistence_seconds=600,
-            off_hours_persistence_seconds=300,
-            offline_timeout_seconds=600,
+            critical_persistence_seconds=5,
+            off_hours_persistence_seconds=5,
+            offline_timeout_seconds=5,
         )
     ]
 
@@ -51,8 +52,8 @@ class MonitoringService:
         )
         self.configs = get_sensor_configs()
 
-        # En una app real, aquí se inicializaría el repositorio de InfluxDB
-        self.repository = None
+        # Conexión al repositorio de InfluxDB
+        self.repository = InfluxSensorRepository()
 
     def run_detection_cycle(self):
         logger.info("Iniciando ciclo de detección...")
@@ -72,8 +73,10 @@ class MonitoringService:
         for config in self.configs:
             stats["processed"] += 1
             try:
-                # Aquí normalmente buscaríamos la lectura de InfluxDB
-                reading = None
+                # Buscar la lectura más reciente en InfluxDB
+                reading = self.repository.get_latest_reading(
+                    sensor_id=config.sensor_id, zone=config.zone, time_window_minutes=15
+                )
 
                 alerts = []
                 if reading:
@@ -96,8 +99,10 @@ class MonitoringService:
                 stats["errors"] += 1
                 logger.error(f"Error procesando sensor {config.sensor_id}", exc_info=True)
 
-        # Limpieza de memoria
+        # Limpieza de memoria y recursos
         self.cooldown_manager.cleanup()
+        if self.repository:
+            self.repository.close()
 
         logger.info(
             f"Resumen de Ejecución: Procesados={stats['processed']}, Detectados={stats['detected']}, Enviados={stats['sent']}, Suprimidos={stats['suppressed']}, Fallidos={stats['failed']}, Errores={stats['errors']}"
