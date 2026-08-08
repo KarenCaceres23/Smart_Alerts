@@ -10,6 +10,7 @@ from src.smart_alerts.detector import Detector
 from src.smart_alerts.models import SendStatus, SensorConfig
 from src.smart_alerts.notifier.telegram import TelegramNotifier
 from src.smart_alerts.utils.logging_config import setup_logging
+from src.influx_client import InfluxSensorRepository
 
 
 # Simulamos la carga de configuraciones por sensor por simplicidad académica
@@ -51,8 +52,8 @@ class MonitoringService:
         )
         self.configs = get_sensor_configs()
 
-        # En una app real, aquí se inicializaría el repositorio de InfluxDB
-        self.repository = None
+        # Conexión al repositorio de InfluxDB
+        self.repository = InfluxSensorRepository()
 
     def run_detection_cycle(self):
         logger.info("Iniciando ciclo de detección...")
@@ -72,8 +73,10 @@ class MonitoringService:
         for config in self.configs:
             stats["processed"] += 1
             try:
-                # Aquí normalmente buscaríamos la lectura de InfluxDB
-                reading = None
+                # Buscar la lectura más reciente en InfluxDB
+                reading = self.repository.get_latest_reading(
+                    sensor_id=config.sensor_id, zone=config.zone, time_window_minutes=15
+                )
 
                 alerts = []
                 if reading:
@@ -96,8 +99,10 @@ class MonitoringService:
                 stats["errors"] += 1
                 logger.error(f"Error procesando sensor {config.sensor_id}", exc_info=True)
 
-        # Limpieza de memoria
+        # Limpieza de memoria y recursos
         self.cooldown_manager.cleanup()
+        if self.repository:
+            self.repository.close()
 
         logger.info(
             f"Resumen de Ejecución: Procesados={stats['processed']}, Detectados={stats['detected']}, Enviados={stats['sent']}, Suprimidos={stats['suppressed']}, Fallidos={stats['failed']}, Errores={stats['errors']}"

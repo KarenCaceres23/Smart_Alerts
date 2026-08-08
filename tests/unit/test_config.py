@@ -15,7 +15,7 @@ def test_config_incomplete(monkeypatch):
 def test_config_defaults(monkeypatch):
     """Test defaults for timeout, retries, backoff."""
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
-    monkeypatch.setenv("TELEGRAM_CHAT_ID", "test_chat")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "123456")
 
     # We clear other variables to trigger defaults
     monkeypatch.delenv("TELEGRAM_TIMEOUT_SECONDS", raising=False)

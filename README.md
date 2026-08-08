@@ -29,7 +29,18 @@ Módulo de alertas para el proyecto académico **SmartH2O**, diseñado con arqui
    TELEGRAM_BACKOFF_SECONDS=2
    ALERT_COOLDOWN_SECONDS=300
    APP_TIMEZONE=America/El_Salvador
+   
+   # Configuración de InfluxDB
+   INFLUXDB_URL=http://localhost:8086
+   INFLUXDB_TOKEN=your_influx_token
+   INFLUXDB_ORG=your_org
+   INFLUXDB_BUCKET=your_bucket
+   INFLUXDB_MEASUREMENT=water_flow
+   INFLUXDB_FLOW_FIELD=flow_rate
+   INFLUXDB_VOLUME_FIELD=daily_volume
    ```
+
+> ⚠️ **IMPORTANTE**: Las credenciales reales nunca deben subirse al repositorio. Asegúrate de que `.env` siempre esté en `.gitignore` y protegido.
 
 ## Ejecución y Pruebas
 
@@ -39,10 +50,11 @@ Para obtener tu Chat ID de forma segura:
 python src/get_chat_id.py
 ```
 
-Para correr una ronda de detección simulada:
+Para ejecutar Smart_Alerts y comprobar la lectura desde InfluxDB y el envío a Telegram:
 ```bash
 python -m src.main
 ```
+*Nota: Si INFLUXDB_TOKEN está configurado, el sistema se conectará a InfluxDB para obtener las lecturas recientes de los sensores configurados, y enviará alertas reales a Telegram si se superan los umbrales. La integración real con InfluxDB y Telegram requiere validación adicional en infraestructura de producción para considerarse totalmente validada.*
 
 ### Automatización (Pruebas)
 Para ejecutar la batería completa de pruebas unitarias garantizando que el sistema cumple los requisitos (incluyendo timeout, backoff 429, validaciones de severidad y cooldown en memoria):

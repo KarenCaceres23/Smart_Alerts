@@ -1,0 +1,2 @@
+{"timestamp": "2026-08-01T22:59:33.186445+00:00", "state": "SENT", "alert_id": "R01_SH2O-ZA-001_24268256", "rule_id": "R01", "sensor_id": "SH2O-ZA-001", "severity": "CRITICA", "attempts": 1, "latency_ms": 639}
+{"timestamp": "2026-08-01T22:59:33.783298+00:00", "state": "SENT", "alert_id": "R03_SH2O-ZA-001_64eea57a", "rule_id": "R03", "sensor_id": "SH2O-ZA-001", "severity": "MEDIA", "attempts": 1, "latency_ms": 585}
