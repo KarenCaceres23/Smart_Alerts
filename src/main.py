@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytz
 
+from src.influx_client import InfluxSensorRepository
 from src.smart_alerts.audit import AuditLogger
 from src.smart_alerts.config import load_config
 from src.smart_alerts.cooldown.memory import MemoryCooldownManager
@@ -10,24 +11,28 @@ from src.smart_alerts.detector import Detector
 from src.smart_alerts.models import SendStatus, SensorConfig
 from src.smart_alerts.notifier.telegram import TelegramNotifier
 from src.smart_alerts.utils.logging_config import setup_logging
-from src.influx_client import InfluxSensorRepository
 
 
-# Simulamos la carga de configuraciones por sensor por simplicidad académica
+# Umbrales provisionales.
+# Deben validarse funcionalmente antes de producción.
 def get_sensor_configs() -> list[SensorConfig]:
+    base_thresholds = {
+        "critical_flow_threshold": 20.0,
+        "off_hours_flow_threshold": 5.0,
+        "daily_volume_limit": 1000.0,
+        "operating_start_hour": 7,
+        "operating_end_hour": 19,
+        "critical_persistence_seconds": 600,
+        "off_hours_persistence_seconds": 300,
+        "offline_timeout_seconds": 600,
+    }
+
     return [
-        SensorConfig(
-            sensor_id="SH2O-ZA-001",
-            zone="Sanitarios piso 1",
-            critical_flow_threshold=20.0,
-            off_hours_flow_threshold=5.0,
-            daily_volume_limit=1000.0,
-            operating_start_hour=7,
-            operating_end_hour=19,
-            critical_persistence_seconds=600,
-            off_hours_persistence_seconds=300,
-            offline_timeout_seconds=600,
-        )
+        SensorConfig(sensor_id="AARD-EDIF-A-CIST", zone="Cisterna", **base_thresholds),
+        SensorConfig(sensor_id="AARD-EDIF-A-COCINA", zone="Cocina", **base_thresholds),
+        SensorConfig(sensor_id="AARD-EDIF-A-RIEGO", zone="Riego", **base_thresholds),
+        SensorConfig(sensor_id="AARD-EDIF-A-SAN1", zone="Sanitarios Piso 1", **base_thresholds),
+        SensorConfig(sensor_id="AARD-EDIF-A-SAN2", zone="Sanitarios Piso 2", **base_thresholds),
     ]
 
 

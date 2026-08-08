@@ -42,6 +42,37 @@ Módulo de alertas para el proyecto académico **SmartH2O**, diseñado con arqui
 
 > ⚠️ **IMPORTANTE**: Las credenciales reales nunca deben subirse al repositorio. Asegúrate de que `.env` siempre esté en `.gitignore` y protegido.
 
+## Esquema de datos SmartH2O
+
+Bucket:
+`telemetria_agua`
+
+Measurement:
+`consumo_agua`
+
+Fields:
+- `flow_rate`
+- `cumulative_volume`
+- `status`
+- `anomaly_flag`
+
+Tags:
+- `sensor_id`
+- `zone`
+
+Sensores soportados actualmente:
+
+- `AARD-EDIF-A-CIST` — Cisterna
+- `AARD-EDIF-A-COCINA` — Cocina
+- `AARD-EDIF-A-RIEGO` — Riego
+- `AARD-EDIF-A-SAN1` — Sanitarios Piso 1
+- `AARD-EDIF-A-SAN2` — Sanitarios Piso 2
+
+> **Nota:**
+> `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG` deben configurarse en `.env` local. Nunca deben incluirse credenciales reales en GitHub.
+> 
+> Los umbrales actuales son provisionales y deberán validarse antes de producción.
+
 ## Ejecución y Pruebas
 
 ### Uso manual

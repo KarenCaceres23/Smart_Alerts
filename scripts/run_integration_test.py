@@ -47,7 +47,7 @@ def run():
     service = MonitoringService()
     # Evitamos que run_detection_cycle cierre la conexión a la base de datos
     # para poder llamarlo varias veces manteniendo el estado de memoria (debounce/cooldown).
-    original_close = service.repository.close
+    original_close = service.repository.close  # noqa: F841
     service.repository.close = lambda: None
 
     print("\n--- ESCENARIO 1: LECTURA NORMAL ---")

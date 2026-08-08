@@ -53,6 +53,10 @@ class InfluxSensorRepository:
 
         self.measurement = os.getenv("INFLUXDB_MEASUREMENT", "water_flow").strip() or "water_flow"
         self.flow_field = os.getenv("INFLUXDB_FLOW_FIELD", "flow_rate").strip() or "flow_rate"
+
+        # Internamente el código utiliza 'daily_volume' para el modelo.
+        # En InfluxDB esto se asocia con el campo real, por ejemplo 'cumulative_volume',
+        # mediante la variable de entorno INFLUXDB_VOLUME_FIELD.
         self.volume_field = (
             os.getenv("INFLUXDB_VOLUME_FIELD", "daily_volume").strip() or "daily_volume"
         )

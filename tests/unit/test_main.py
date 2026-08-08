@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 from src.main import MonitoringService
-from src.smart_alerts.models import SensorReading
 
 
 @patch("src.main.InfluxSensorRepository")
@@ -23,14 +22,10 @@ def test_monitoring_service_uses_influx_repository(
     mock_repo_instance = MagicMock()
     mock_influx_repo_class.return_value = mock_repo_instance
 
-    mock_reading = SensorReading(
-        sensor_id="SH2O-ZA-001",
-        zone="Sanitarios piso 1",
-        timestamp="2023-10-27T10:00:00Z",
-        flow_rate=25.0,
-        daily_volume=500.0,
-    )
-    mock_repo_instance.get_latest_reading.return_value = mock_reading
+    # Mock config para que `get_latest_reading` retorne un valor ficticio si quisiéramos,
+    # pero como tenemos 5 sensores, podemos devolver None u otro valor.
+    # Aquí probamos que llame a la db 5 veces
+    mock_repo_instance.get_latest_reading.return_value = None
 
     # Initialize service
     service = MonitoringService()
@@ -38,11 +33,24 @@ def test_monitoring_service_uses_influx_repository(
     # Run cycle
     service.run_detection_cycle()
 
-    # Verify repository was called
-    mock_repo_instance.get_latest_reading.assert_called_once()
-    args, kwargs = mock_repo_instance.get_latest_reading.call_args
-    assert kwargs["sensor_id"] == "SH2O-ZA-001"
-    assert kwargs["zone"] == "Sanitarios piso 1"
+    # Verify repository was called 5 veces
+    assert mock_repo_instance.get_latest_reading.call_count == 5
+
+    # Comprobamos las llamadas exactas
+    expected_calls = [
+        ("AARD-EDIF-A-CIST", "Cisterna"),
+        ("AARD-EDIF-A-COCINA", "Cocina"),
+        ("AARD-EDIF-A-RIEGO", "Riego"),
+        ("AARD-EDIF-A-SAN1", "Sanitarios Piso 1"),
+        ("AARD-EDIF-A-SAN2", "Sanitarios Piso 2"),
+    ]
+
+    actual_calls = [
+        (call.kwargs["sensor_id"], call.kwargs["zone"])
+        for call in mock_repo_instance.get_latest_reading.call_args_list
+    ]
+
+    assert actual_calls == expected_calls
 
     # Verify repository was closed at the end
     mock_repo_instance.close.assert_called_once()
